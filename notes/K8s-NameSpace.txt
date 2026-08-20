@@ -1,0 +1,129 @@
+K8s-NameSpace
+
+Kubernetes bydefault created 3 namespases - they are "Default" , "kube-system" & "kube-public"
+and by-default "Default" name space is active. For Lab environment "Default" namespace is good to use.
+When you need to use for enterprise or production level of setup then you need to create separate namespaces.
+
+If we have a namespace like Dev, SIT, UAT & Prod then you can assign separate polices for name spaces.
+Each of the namespace can be configure and control in our own way, also can allocate specific amount resources 
+like CPU, Memory etc.
+
+
+Lets say we have object/container call web-service, web-pod and db-services in Default name spaces. 
+Also same sets of object/container present in Dev namespace.
+Now if you wanted to access the db-services with in the Default name space then 
+
+    mysql.connect("db-services")
+
+If you wanted to access in Dev name space then 
+
+    mysql.connect("db-services".dev.svc.cluster.local")
+
+We able to access other namespace service because of Kubernetes domain name service. cluster.local is the default DNS service
+in Kubernetes.
+
+List of PODs in other namespace:
+
+> kubectl get pods    - Default namespace
+> kubectl get pods --namespace=kube-system      - kube-system namespace
+
+
+Lets say if you wanted to run a pods in dev namespace for all the time then you can specify in pod defination.
+
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapppod
+  namespace: dev
+  labels:
+    app: myapp
+    type: front-end-app
+
+spec:
+  containers:
+    - name: nginx-containers
+      image: nginx
+
+----
+
+Using Command line:
+> kubectl create -f pod.yaml --namespace=dev
+
+
+### How to craete new new namespace?
+
+file: namespace-dev.yaml
+
+----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+----
+
+> kubectl create -f namespace-dev.yaml
+
+or other way to create
+
+> kubectl create namespace dev   ## no file name require.
+
+
+If you wanted to switch to another name space permanently like from Default to dev name space. Then here is the Command
+
+> kubectl config set-context $(kubectl config current-context) --namespace=dev
+> kubectl get pods    <- this will displays pods inside the dev namespace.
+
+# to view pods of all namespace
+> kubectl get pods --all-namespaces 
+
+## Resource Quota:
+
+file: compute-quota.yaml
+-----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: dev
+
+spec:
+  hard:
+    pods: "10"
+    requests.cpu: "4"
+    requests.memory: 5Gi
+    limits.cpu: "10"
+    limits.memory: 10Gi
+-----
+
+> kubectl craete -f compute-quota.yaml
+
+
+## Imperative Approach:
+
+> kubectl run --image=nginx nginx
+> kubectl create deployment --image=nginx nginx
+> kubectl expose deployment nginx --port 80
+> kubectl edit deployment nginx
+> kubectl scale deployment nginx --replicas=5
+> kubectl set image deployment nginx nginx=nginx:1.18
+> kubectl create -f nginx.yaml
+> kubectl replace -f nginx.yaml
+> kubectl delete -f nginx.yaml
+
+Declarative Approach: as everything defined in conf file
+
+you just need to apply, update and delete parameter can be use.
+
+Most of the time we will take delarative approach.
+If you need to do any changes in the pod or deployment defination file, lets say you wanted to update new container image file.
+Then to go the correct path where the defination file exist, vi it and then do then change, after that hit the following 
+apply Command
+
+Create Object:
+-------------
+> kubectl apply -f nginx.yaml
+> kubectl apply -f /path/to/config
+
+update Object:
+> kubectl apply -f nginx.yaml

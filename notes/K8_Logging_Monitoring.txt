@@ -1,0 +1,36 @@
+# K8_Logging_Monitoring
+= = = = = = = = = = = =
+Enable Metric Server -
+
+> minikube addons enable metrics-server    <- One time activity
+
+Then hit the command to know the node and pod status.
+
+[osboxes@osboxes metrics-server]$ kubectl top node
+NAME       CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+minikube   239m         11%    911Mi           32%       
+[osboxes@osboxes metrics-server]$ kubectl top pod
+NAME                              CPU(cores)   MEMORY(bytes)   
+hello-minikube-65dc654df9-2w94n   0m           5Mi             
+[osboxes@osboxes metrics-server]$ kubectl top pods
+NAME                              CPU(cores)   MEMORY(bytes)   
+hello-minikube-65dc654df9-2w94n   0m           5Mi             
+[osboxes@osboxes metrics-server]$ minikube addons enable metrics-server
+
+
+## To see logs for POD
+
+> kubectl get pods
+NAME                              READY   STATUS    RESTARTS      AGE
+hello-minikube-65dc654df9-2w94n   1/1     Running   7 (35h ago)   7d17h
+
+metrics-server]$ kubectl logs hello-minikube-65dc654df9-2w94n
+/docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+/docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf
+10-listen-on-ipv6-by-default.sh: info: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+/docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+/docker-entrypoint.sh: Configuration complete; ready for start up
+2022/12/02 12:12:46 [notice] 1#1: using the "epoll" event me

@@ -1,0 +1,120 @@
+<div class="page">
+  <header class="hero">
+    <p class="eyebrow">Kubernetes Knowledge Base</p>
+
+    <h1>Find answers in your notes</h1>
+
+    <p class="description">
+      Search commands, YAML examples, and explanations across your Markdown and text notes.
+    </p>
+
+    <form class="search-form" (ngSubmit)="askQuestion()">
+      <input
+        type="text"
+        name="query"
+        [(ngModel)]="query"
+        placeholder="Ask a Kubernetes question..."
+      />
+
+      <button type="submit" [disabled]="answerLoading">
+        {{ answerLoading ? 'Thinking...' : 'Ask' }}
+      </button>
+    </form>
+  </header>
+
+  @if (errorMessage) {
+    <p class="error">
+      {{ errorMessage }}
+    </p>
+  }
+
+  @if (answerText || answerLoading) {
+    <section class="answer-card">
+      <h2>Answer</h2>
+
+      <div class="answer-content">
+        <markdown [data]="answerText"></markdown>
+      </div>
+
+      @if (answerLoading) {
+        <p class="streaming-status">
+          Generating answer...
+        </p>
+      }
+
+      @if (answerSources.length > 0) {
+        <div class="source-section">
+          <h3>Reference documents</h3>
+
+          <ul class="sources">
+            @for (
+              source of answerSources;
+              track source.source + source.section
+            ) {
+              <li class="source-item">
+                <strong>
+                  {{ source.title || source.section }}
+                </strong>
+
+                <span class="source-details">
+                  File: {{ source.source }}
+                  <br />
+                  Section: {{ source.section }}
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+  }
+
+  @if (
+    !loading &&
+    query &&
+    totalResults === 0 &&
+    !errorMessage &&
+    !answerText &&
+    !answerLoading
+  ) {
+    <p class="empty">
+      No matching Kubernetes notes found.
+    </p>
+  }
+
+  @if (totalResults > 0) {
+    <p class="result-count">
+      {{ totalResults }}
+      result{{ totalResults === 1 ? '' : 's' }}
+      found
+    </p>
+
+    <section class="results">
+      @for (result of results; track result.id) {
+        <article class="result-card">
+          <h2>{{ result.title }}</h2>
+
+          <p class="metadata">
+            {{ result.source }}
+            ·
+            {{ result.section }}
+            ·
+            {{ result.topic }}
+          </p>
+
+          <button
+            class="copy-button"
+            type="button"
+            (click)="copyText(result.content)"
+          >
+            Copy
+          </button>
+
+          <div class="content">
+            {{ result.content }}
+          </div>
+        </article>
+      }
+    </section>
+  }
+</div>

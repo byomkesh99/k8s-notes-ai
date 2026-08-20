@@ -1,0 +1,39 @@
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+infrastructure/meili_data/
+.env
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local environments and generated frontend output
+.env
+.venv/
+web/dist/
+frontend/
+meilidata/
+terraform.tfstate*
+.terraform/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local environments and generated frontend output
+web/dist/
+frontend/
+meilidata/
+
+# Local VS Code configuration
+web/.vscode/
