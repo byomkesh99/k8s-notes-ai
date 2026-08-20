@@ -1,0 +1,55 @@
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.15
+    container_name: k8s-notes-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_ENV: production
+      MEILI_DB_PATH: /meili_data
+    volumes:
+      - meilisearch_data:/meili_data
+    expose:
+      - "7700"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://127.0.0.1:7700/health"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - internal
+
+  api:
+    image: ${API_IMAGE}
+    container_name: k8s-notes-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MEILISEARCH_URL: http://meilisearch:7700
+      NOTES_DIR: /app/notes
+    volumes:
+      - ./notes:/app/notes:ro
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      meilisearch:
+        condition: service_healthy
+    networks:
+      - internal
+
+volumes:
+  meilisearch_data:
+
+networks:
+  internal:
+    driver: bridge
