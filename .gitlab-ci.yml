@@ -1,0 +1,33 @@
+stages:
+  - validate
+
+backend_tests:
+  stage: validate
+  image: python:3.12-slim
+  script:
+    - pip install --no-cache-dir -r backend/requirements.txt
+    - python -m compileall backend
+    - python -m pytest backend/test_chat.py backend/test_embeddings.py
+
+frontend_build:
+  stage: validate
+  image: node:22
+  script:
+    - cd web
+    - npm ci
+    - npm run build
+
+terraform_validate:
+  stage: validate
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint: [""]
+  parallel:
+    matrix:
+      - TF_DIRECTORY:
+          - terraform/azure-vm
+          - terraform/azure-foundry
+  script:
+    - cd "$TF_DIRECTORY"
+    - terraform init -backend=false
+    - terraform validate
