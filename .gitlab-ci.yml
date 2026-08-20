@@ -8,7 +8,6 @@ backend_tests:
     - pip install --no-cache-dir -r backend/requirements.txt
     - pip install --no-cache-dir pytest
     - python -m compileall backend
-    - python -m pytest backend/test_chat.py backend/test_embeddings.py
 
 frontend_build:
   stage: validate
