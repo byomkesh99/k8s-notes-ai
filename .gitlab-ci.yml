@@ -1,5 +1,6 @@
 stages:
   - validate
+  - build
 
 backend_tests:
   stage: validate
@@ -31,3 +32,20 @@ terraform_validate:
     - cd "$TF_DIRECTORY"
     - terraform init -backend=false
     - terraform validate
+
+backend_image:
+  stage: build
+  image: docker:cli
+  services:
+    - name: docker:dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    API_IMAGE: "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHA"
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+  script:
+    - docker build --pull -t "$API_IMAGE" backend
+    - docker push "$API_IMAGE"
+    - docker logout "$CI_REGISTRY"
