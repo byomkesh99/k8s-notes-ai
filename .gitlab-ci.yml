@@ -82,6 +82,7 @@ deploy_production:
   environment:
     name: production
     url: https://k8s-notes-ai.duckdns.org
+
   before_script:
     - apk add --no-cache openssh-client curl
     - mkdir -p ~/.ssh
@@ -90,26 +91,30 @@ deploy_production:
     - chmod 600 ~/.ssh/k8s-notes-ai-gitlab-ci
     - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
+
   script:
     - |
+      API_IMAGE="${CI_REGISTRY_IMAGE}/api:${CI_COMMIT_SHA}"
+
       ssh -i ~/.ssh/k8s-notes-ai-gitlab-ci \
         -o IdentitiesOnly=yes \
         -o StrictHostKeyChecking=yes \
-        "$AZURE_VM_USER@$AZURE_VM_HOST" '
-          set -eu
-          cd /opt/k8s-notes-ai
-          export API_IMAGE="registry.gitlab.com/byomkesh99-projects/k8s-notes-ai/api:${CI_COMMIT_SHA}"
+        "$AZURE_VM_USER@$AZURE_VM_HOST" \
+        "API_IMAGE='$API_IMAGE' sh -s" <<'REMOTE_SCRIPT'
+      set -eu
 
-          docker compose \
-            --env-file .env \
-            -f infrastructure/compose.production.yaml \
-            pull api
+      cd /opt/k8s-notes-ai
 
-          docker compose \
-            --env-file .env \
-            -f infrastructure/compose.production.yaml \
-            up -d api
+      docker compose \
+        --env-file .env \
+        -f infrastructure/compose.production.yaml \
+        pull api
 
-          curl --fail --silent http://127.0.0.1:8000/health
-          echo "Production API health check passed"
-        '
+      docker compose \
+        --env-file .env \
+        -f infrastructure/compose.production.yaml \
+        up -d api
+
+      curl --fail --silent http://127.0.0.1:8000/health
+      echo "Production API health check passed"
+      REMOTE_SCRIPT
