@@ -49,3 +49,13 @@ backend_image:
     - docker build --pull -t "$API_IMAGE" backend
     - docker push "$API_IMAGE"
     - docker logout "$CI_REGISTRY"
+
+production_compose_validate:
+  stage: validate
+  image: docker:cli
+  variables:
+    API_IMAGE: "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHA"
+  script:
+    - docker compose
+        -f infrastructure/compose.production.yaml
+        config
