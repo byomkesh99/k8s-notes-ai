@@ -55,7 +55,17 @@ production_compose_validate:
   image: docker:cli
   variables:
     API_IMAGE: "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_SHA"
+    MEILI_MASTER_KEY: "ci-validation-placeholder"
   script:
-    - docker compose
-        -f infrastructure/compose.production.yaml
-        config
+    - |
+      cat > .env <<'EOF'
+      MEILISEARCH_URL=http://meilisearch:7700
+      MEILISEARCH_KEY=ci-validation-placeholder
+      MEILI_MASTER_KEY=ci-validation-placeholder
+      AZURE_INFERENCE_ENDPOINT=https://example.invalid
+      AZURE_FOUNDRY_API_KEY=ci-validation-placeholder
+      AZURE_EMBEDDING_MODEL=ci-validation-placeholder
+      AZURE_CHAT_MODEL=k8s-chat
+      EOF
+    - docker compose -f infrastructure/compose.production.yaml config
+    - rm -f .env
