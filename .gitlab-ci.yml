@@ -1,6 +1,7 @@
 stages:
   - validate
   - build
+  - deploy
 
 backend_tests:
   stage: validate
@@ -69,3 +70,46 @@ production_compose_validate:
       EOF
     - docker compose -f infrastructure/compose.production.yaml config
     - rm -f .env
+
+
+deploy_production:
+  stage: deploy
+  image: alpine:latest
+  needs:
+    - job: backend_image
+  when: manual
+  allow_failure: false
+  environment:
+    name: production
+    url: https://k8s-notes-ai.duckdns.org
+  before_script:
+    - apk add --no-cache openssh-client curl
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/k8s-notes-ai-gitlab-ci
+    - chmod 600 ~/.ssh/k8s-notes-ai-gitlab-ci
+    - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - |
+      ssh -i ~/.ssh/k8s-notes-ai-gitlab-ci \
+        -o IdentitiesOnly=yes \
+        -o StrictHostKeyChecking=yes \
+        "$AZURE_VM_USER@$AZURE_VM_HOST" '
+          set -eu
+          cd /opt/k8s-notes-ai
+          export API_IMAGE="registry.gitlab.com/byomkesh99-projects/k8s-notes-ai/api:${CI_COMMIT_SHA}"
+
+          docker compose \
+            --env-file .env \
+            -f infrastructure/compose.production.yaml \
+            pull api
+
+          docker compose \
+            --env-file .env \
+            -f infrastructure/compose.production.yaml \
+            up -d api
+
+          curl --fail --silent http://127.0.0.1:8000/health
+          echo "Production API health check passed"
+        '
