@@ -1,3 +1,4 @@
+name: k8s-notes-ai
 services:
   meilisearch:
     image: getmeili/meilisearch:v1.15
@@ -29,16 +30,16 @@ services:
       - internal
 
   api:
-    image: ${API_IMAGE}
+    image: ${API_IMAGE:?API_IMAGE is required}
     container_name: k8s-notes-api
     restart: unless-stopped
     env_file:
-      - .env
+      - ../.env
     environment:
       MEILISEARCH_URL: http://meilisearch:7700
       NOTES_DIR: /app/notes
     volumes:
-      - ./notes:/app/notes:ro
+      - ../notes:/app/notes:ro
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -49,7 +50,9 @@ services:
 
 volumes:
   meilisearch_data:
+    name: k8s-notes-ai_meilisearch_data
 
 networks:
   internal:
+    name: k8s-notes-ai_internal
     driver: bridge
