@@ -1,6 +1,7 @@
 stages:
   - validate
   - build
+  - plan
   - deploy
 
 backend_tests:
@@ -160,5 +161,47 @@ deploy_production:
         echo "Health check attempt $attempt failed; retrying in 3 seconds"
         sleep 3
       done
-      
+
       REMOTE_SCRIPT
+
+
+terraform_plan_vm:
+  stage: plan
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint: [""]
+  resource_group: terraform-azure-vm
+  variables:
+    ARM_USE_CLI: "false"
+    ARM_USE_AZUREAD: "true"
+  script:
+    - cd terraform/azure-vm
+    - terraform init -reconfigure
+    - terraform fmt -check -recursive
+    - terraform validate
+    - terraform plan -out=tfplan
+  artifacts:
+    name: "terraform-vm-plan-$CI_COMMIT_SHA"
+    paths:
+      - terraform/azure-vm/tfplan
+    expire_in: 7 days
+
+
+terraform_apply_vm:
+  stage: deploy
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint: [""]
+  needs:
+    - job: terraform_plan_vm
+      artifacts: true
+  resource_group: terraform-azure-vm
+  when: manual
+  allow_failure: false
+  variables:
+    ARM_USE_CLI: "false"
+    ARM_USE_AZUREAD: "true"
+  script:
+    - cd terraform/azure-vm
+    - terraform init -reconfigure
+    - terraform apply -auto-approve tfplan

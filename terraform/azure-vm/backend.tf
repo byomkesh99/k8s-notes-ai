@@ -5,7 +5,7 @@ terraform {
     container_name       = "k8s-notes-tfstate"
     key                  = "azure-vm.terraform.tfstate"
 
-    use_cli          = true
+    use_cli          = false
     use_azuread_auth = true
     tenant_id        = "50b3b208-9642-4394-bf3f-58b5dfd07635"
   }
