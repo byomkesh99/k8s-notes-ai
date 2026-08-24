@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface SearchRequest {
   query: string;
@@ -43,7 +44,9 @@ export interface AnswerResponse {
 })
 export class SearchService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:8000';
+  private apiUrl = environment.apiUrl;
+  // by adding the environment variable above, we can switch between production and development API URLs without changing the code.
+  // private apiUrl = 'http://localhost:8000';
   //apiUrl = 'api';
 
   search(request: SearchRequest): Observable<SearchResponse> {

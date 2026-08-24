@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MarkdownComponent } from 'ngx-markdown';
+import { environment } from '../environments/environment';
 
 import {
   AnswerResponse,
@@ -78,7 +79,9 @@ export class App {
 
     try {
       const response = await fetch(
-        'http://localhost:8000/answer/stream',
+        `${environment.apiUrl}/answer/stream`,
+        // The above line uses the environment variable to determine the API URL based on the current environment (development or production).
+        // 'http://localhost:8000/answer/stream',
         //'/api/answer/stream',
         {
           method: 'POST',
