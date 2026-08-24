@@ -194,6 +194,36 @@ terraform_plan_vm:
     expire_in: 7 days
 
 
+terraform_plan_foundry:
+  stage: plan
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint: [""]
+  resource_group: terraform-azure-foundry
+  environment:
+    name: production
+  variables:
+    ARM_USE_CLI: "false"
+    ARM_USE_AZUREAD: "true"
+  before_script:
+    - test -n "$ARM_CLIENT_ID"
+    - test -n "$ARM_CLIENT_SECRET"
+    - test -n "$ARM_TENANT_ID"
+    - test -n "$ARM_SUBSCRIPTION_ID"
+  script:
+    - cd terraform/azure-foundry
+    - terraform init -reconfigure
+    - terraform fmt -check -recursive
+    - terraform validate
+    - terraform plan -out=tfplan
+  artifacts:
+    name: "terraform-foundry-plan-$CI_COMMIT_SHA"
+    paths:
+      - terraform/azure-foundry/tfplan
+    expire_in: 7 days
+
+
+
 terraform_apply_vm:
   stage: deploy
   image:
@@ -210,5 +240,27 @@ terraform_apply_vm:
     ARM_USE_AZUREAD: "true"
   script:
     - cd terraform/azure-vm
+    - terraform init -reconfigure
+    - terraform apply -auto-approve tfplan
+
+
+terraform_apply_foundry:
+  stage: deploy
+  image:
+    name: hashicorp/terraform:latest
+    entrypoint: [""]
+  needs:
+    - job: terraform_plan_foundry
+      artifacts: true
+  resource_group: terraform-azure-foundry
+  environment:
+    name: production
+  when: manual
+  allow_failure: false
+  variables:
+    ARM_USE_CLI: "false"
+    ARM_USE_AZUREAD: "true"
+  script:
+    - cd terraform/azure-foundry
     - terraform init -reconfigure
     - terraform apply -auto-approve tfplan
