@@ -17,7 +17,12 @@ frontend_build:
   script:
     - cd web
     - npm ci
-    - npm run build
+    - npm run build -- --configuration production
+  artifacts:
+      name: "frontend-$CI_COMMIT_SHA"
+      paths:
+        - web/dist/web/browser/
+      expire_in: 7 days
 
 terraform_validate:
   stage: validate
@@ -77,6 +82,8 @@ deploy_production:
   image: alpine:latest
   needs:
     - job: backend_image
+    - job: frontend_build
+      artifacts: true
   when: manual
   allow_failure: false
   environment:
@@ -84,7 +91,7 @@ deploy_production:
     url: https://k8s-notes-ai.duckdns.org
 
   before_script:
-    - apk add --no-cache openssh-client curl
+    - apk add --no-cache openssh-client curl rsync
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/k8s-notes-ai-gitlab-ci
@@ -100,10 +107,28 @@ deploy_production:
         -o IdentitiesOnly=yes \
         -o StrictHostKeyChecking=yes \
         "$AZURE_VM_USER@$AZURE_VM_HOST" \
+        'rm -rf /opt/k8s-notes-ai/frontend.next &&
+         mkdir -p /opt/k8s-notes-ai/frontend.next'
+
+      rsync -az --delete \
+        -e "ssh -i ~/.ssh/k8s-notes-ai-gitlab-ci -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+        web/dist/web/browser/ \
+        "$AZURE_VM_USER@$AZURE_VM_HOST:/opt/k8s-notes-ai/frontend.next/"
+
+      ssh -i ~/.ssh/k8s-notes-ai-gitlab-ci \
+        -o IdentitiesOnly=yes \
+        -o StrictHostKeyChecking=yes \
+        "$AZURE_VM_USER@$AZURE_VM_HOST" \
         "API_IMAGE='$API_IMAGE' sh -s" <<'REMOTE_SCRIPT'
       set -eu
 
       cd /opt/k8s-notes-ai
+
+      test -f frontend.next/index.html
+
+      rm -rf frontend.previous
+      mv frontend frontend.previous
+      mv frontend.next frontend
 
       docker compose \
         --env-file .env \
@@ -116,5 +141,6 @@ deploy_production:
         up -d api
 
       curl --fail --silent http://127.0.0.1:8000/health
-      echo "Production API health check passed"
+
+      echo "Production API and frontend deployment passed"
       REMOTE_SCRIPT
