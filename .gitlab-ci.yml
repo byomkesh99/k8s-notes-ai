@@ -140,7 +140,25 @@ deploy_production:
         -f infrastructure/compose.production.yaml \
         up -d api
 
-      curl --fail --silent http://127.0.0.1:8000/health
-
-      echo "Production API and frontend deployment passed"
+      for attempt in 1 2 3 4 5 6 7 8 9 10; do
+        if curl --fail --silent --show-error \
+            --connect-timeout 3 \
+            --max-time 10 \
+            http://127.0.0.1:8000/health; then
+          echo "Production API health check passed"
+          break
+        fi
+      
+        if [ "$attempt" -eq 10 ]; then
+          echo "Production API health check failed after 10 attempts"
+          docker compose \
+            --env-file .env \
+            -f infrastructure/compose.production.yaml \
+            logs --tail=100 api
+          exit 1
+        fi
+        echo "Health check attempt $attempt failed; retrying in 3 seconds"
+        sleep 3
+      done
+      
       REMOTE_SCRIPT
