@@ -116,6 +116,16 @@ deploy_production:
         web/dist/web/browser/ \
         "$AZURE_VM_USER@$AZURE_VM_HOST:/opt/k8s-notes-ai/frontend.next/"
 
+      rsync -az \
+        -e "ssh -i ~/.ssh/k8s-notes-ai-gitlab-ci -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+        infrastructure/nginx/k8s-notes-ai \
+        "$AZURE_VM_USER@$AZURE_VM_HOST:/tmp/k8s-notes-ai.nginx"
+
+      rsync -az \
+        -e "ssh -i ~/.ssh/k8s-notes-ai-gitlab-ci -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+        infrastructure/nginx/conf.d/00-rate-limits.conf \
+        "$AZURE_VM_USER@$AZURE_VM_HOST:/tmp/00-rate-limits.conf"
+
       ssh -i ~/.ssh/k8s-notes-ai-gitlab-ci \
         -o IdentitiesOnly=yes \
         -o StrictHostKeyChecking=yes \
@@ -161,6 +171,36 @@ deploy_production:
         echo "Health check attempt $attempt failed; retrying in 3 seconds"
         sleep 3
       done
+
+      sudo install -o root -g root -m 0644 \
+        /tmp/k8s-notes-ai.nginx \
+        /etc/nginx/sites-available/k8s-notes-ai
+
+      sudo install -o root -g root -m 0644 \
+        /tmp/00-rate-limits.conf \
+        /etc/nginx/conf.d/00-rate-limits.conf
+
+      sudo ln -sfn \
+        /etc/nginx/sites-available/k8s-notes-ai \
+        /etc/nginx/sites-enabled/k8s-notes-ai
+
+      if ! sudo nginx -t; then
+        echo "Nginx configuration test failed"
+        exit 1
+      fi
+
+      sudo systemctl reload nginx
+
+      if ! curl --fail --silent --show-error \
+        --connect-timeout 5 \
+        --max-time 15 \
+        https://k8s-notes-ai.duckdns.org/; then
+        echo "HTTPS smoke test failed"
+        exit 1
+      fi
+
+      rm -f /tmp/k8s-notes-ai.nginx
+      rm -f /tmp/00-rate-limits.conf
 
       REMOTE_SCRIPT
 
