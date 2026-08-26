@@ -4,4 +4,5 @@
 *.tfplan
 terraform.tfvars
 inventory/*.json
+.terraform.lock.hcl
 .env
