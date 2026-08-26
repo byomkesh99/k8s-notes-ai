@@ -19,8 +19,23 @@ __pycache__/
 web/dist/
 frontend/
 meilidata/
+
+# Terraform
 terraform.tfstate*
 .terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and temp
+*.log
+tmp/
 
 # macOS
 .DS_Store
