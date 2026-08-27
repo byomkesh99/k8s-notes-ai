@@ -7,6 +7,6 @@ terraform {
 
     use_cli          = false
     use_azuread_auth = true
-    tenant_id        = "50b3b208-9642-4394-bf3f-58b5dfd07635"
+    tenant_id        = "<Your Tenant ID>"
   }
 }
